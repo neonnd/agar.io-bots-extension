@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0
+// @version      3.0.1
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC
+// @updateURL    //
+// @downloadURL  //
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -14,7 +16,7 @@
    Check OP-Bots.com For Premium Bots
 */
 
-/* 
+/*
    The MIT License (MIT)
    Copyright (c) 2019 Neon
    Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,44 +32,9 @@
    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE.
 */
-
-window.bots = [];
-
-window.client = {
-    collectPellets: false,
-    startedBots: false,
-    ready: false,
-    clientX: 0,
-    clientY: 0,
-    botID: 1,
-    bots: 0
-};
-
-function addListener() {
-    document.addEventListener('mousemove', event => {
-        window.client.clientX = event.clientX;
-        window.client.clientY = event.clientY;
-    });
-}
-
-function loadGUI() {
-    $('.agario-promo-container').replaceWith(`
-    <input onchange="localStorage.setItem('botNick', this.value);" id="botNick" maxlength="15" class="form-control" placeholder="Bot Name" value="Bot"></input>
-    <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="3" class="form-control" placeholder="Bot Amount" value="10"></input>
-    <center><button id="toggleButton" onclick="window.newBot(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
-    `);
-    if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
-    if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Bot');
-    console.log('[AgarUnlimited] Ready!');
-    window.client.ready = true;
-}
-
-function loadBootsTrapCSS() {
-    $('head').append(`<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">`);
-}
 
 function editCore(core) {
     core = core.replace(/;if\((\w)<1\.0\){/i, ';if($1<0){');
@@ -101,9 +68,7 @@ let observer = new MutationObserver((mutations) => {
                     newscript.textContent = editCore(coretext);
                     document.body.appendChild(newscript);
                     setTimeout(() => {
-                        loadBootsTrapCSS();
-                        addListener();
-                        loadGUI();
+                        window.client = new Client();
                     }, 3500);
                 }
             }
@@ -113,30 +78,92 @@ let observer = new MutationObserver((mutations) => {
 
 observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
 
-window.newBot = function (amount) {
-    if (!window.client.ready) return;
-    if (amount) {
+class Client {
+
+    constructor() {
+        this.collectPellets = false;
+        this.startedBots = false;
+        this.bots = new Array();
+        this.addEventListener();
+        this.spawnedBots = 0;
+        this.ready = false;
+        this.clientX = 0;
+        this.clientY = 0;
+        this.botID = 1;
+        this.loadCSS();
+        this.loadGUI();
+    }
+
+    addEventListener() {
+        document.addEventListener('keydown', event => {
+            let key = String.fromCharCode(event.keyCode);
+            if (key == 'X') {
+                if (this.bots.length > 0 && this.startedBots) this.splitBots();
+            }
+            else if (key == 'C') {
+                if (this.bots.length > 0 && this.startedBots) this.ejectBots();
+            }
+            else if (key == 'P') {
+                this.collectPellets = !this.collectPellets
+                console.log(`Collect Pellets: ${this.collectPellets}`);
+            }
+        });
+
+        document.addEventListener('mousemove', event => {
+            this.clientX = event.clientX;
+            this.clientY = event.clientY;
+        });
+    }
+
+    loadCSS() {
+        let script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@9';
+        document.getElementsByTagName("head")[0].appendChild(script);
+        $('head').append(`<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">`);
+    }
+
+    loadGUI() {
+        $('.agario-promo-container').replaceWith(`
+        <input onchange="localStorage.setItem('botNick', this.value);" id="botNick" maxlength="15" class="form-control" placeholder="Bot Name" value="Bot"></input>
+        <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="3" class="form-control" placeholder="Bot Amount" value="10"></input>
+        <center><button id="toggleButton" onclick="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
+        `);
+        if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
+        if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
+        console.log('[AgarUnlimited] Ready!');
+        this.ready = true;
+    }
+
+    startBots(amount) {
+        if (!this.ready) return;
         amount > 200 ? amount = 200 : amount = amount;
         for (let i = 0; i < amount; i++) {
-            window.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`));
-            window.client.botID++;
+            this.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`));
+            this.botID++;
         }
-    } else {
-        window.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`));
-        window.client.botID++;
+        console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
+        this.startedBots = true;
     }
-    $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
-    window.client.startedBots = true;
-}
 
-window.stopBots = function () {
-    if (!window.client.startedBots) return;
-    window.bots.forEach(bot => {
-        bot.ws.close();
-    });
-    console.log('[AgarUnlimited] Stopped bots!');
-    window.client.startedBots = false;
-    $('#toggleButton').replaceWith(`<button id='toggleButton' onclick="window.newBot(localStorage.getItem('botAmount'));" class='btn btn-success'>Start Bots</button>`);
+    stopBots() {
+        if (!this.startedBots) return;
+        this.bots.forEach(bot => {
+            bot.ws.close();
+        });
+        this.bots.length = 0;
+        console.log('[AgarUnlimited] Stopped bots!');
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick="window.client.startBots(localStorage.getItem('botAmount'));" class='btn btn-success'>Start Bots</button>`);
+        this.startedBots = false;
+    }
+
+    splitBots() {
+        this.bots.forEach(bot => bot.split());
+    }
+
+    ejectBots() {
+        this.bots.forEach(bot => bot.eject());
+    }
 }
 
 class Bot {
@@ -215,14 +242,14 @@ class Bot {
 
             case 85:
                 console.log(`Bot_${this.id}: Captcha failed Disconnecting...`);
-                window.client.bots--;
+                window.client.spawnedBots--;
                 this.ws.close();
                 break;
 
             case 32:
                 this.cellsIDs.push(msg.getUint32(offset, true));
                 console.log(`Bot_${this.id}: Spawned`);
-                window.client.bots++;
+                window.client.spawnedBots++;
                 this.isAlive = true;
                 break;
 
@@ -284,7 +311,7 @@ class Bot {
                         }
 
                         if (this.isAlive && this.cellsIDs.length == 0) {
-                            window.client.bots--;
+                            window.client.spawnedBots--;
                             this.isAlive = false;
                             window.agarApp.recaptcha.requestCaptchaV3('play', token => this.spawn(this.botNick + 'x', token));
                         }
@@ -427,21 +454,3 @@ class Bot {
         return e;
     }
 }
-
-document.addEventListener('keydown', event => {
-    let key = String.fromCharCode(event.keyCode);
-    if (key == 'X') {
-        if (bots.length > 0 && window.client.startedBots) {
-            bots.forEach(bot => bot.split());
-        }
-    }
-    else if (key == 'C') {
-        if (bots.length > 0 && window.client.startedBots) {
-            bots.forEach(bot => bot.eject());
-        }
-    }
-    else if (key == 'P') {
-        window.client.collectPellets = !window.client.collectPellets;
-        console.log(`Collect Pellets: ${window.client.collectPellets}`);
-    }
-});
