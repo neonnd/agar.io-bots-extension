@@ -51,6 +51,24 @@ function editCore(core) {
     return core;
 }
 
+window.draw = () => {
+  if (!window.minX || !window.minY || !window.maxY || !window.maxY) return;
+  const ctx = document.getElementById('canvas').getContext('2d');
+  ctx.save();
+  ctx.strokeStyle = '#0000ff';
+  ctx.lineWidth = 20;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(window.minX, window.minY);
+  ctx.lineTo(window.maxX, window.minY);
+  ctx.lineTo(window.maxX, window.maxY);
+  ctx.lineTo(window.minX, window.maxY);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 let observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
@@ -79,6 +97,7 @@ let observer = new MutationObserver((mutations) => {
 observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
 
 class Node {
+
     constructor() {
         this.x = 0;
         this.y = 0;
