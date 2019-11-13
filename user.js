@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0.1
+// @version      3.0.2
 // @description  AgarUnlimited Revive by Neon
-// @author       Neon - Sizrex - MrSonicMaster - NuclearC
+// @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
 // @updateURL    //
 // @downloadURL  //
 // @match        *://agar.io/*
@@ -77,6 +77,19 @@ let observer = new MutationObserver((mutations) => {
 });
 
 observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
+
+class Node {
+
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.size = 0;
+        this.flags = 0;
+        this.extendedFlags = 0;
+        this.isVirus = false;
+        this.isFood = false;
+    }
+}
 
 class Client {
 
@@ -270,32 +283,33 @@ class Bot {
                         for (let i = 0; i < eatQueueLength; i++) off += 8;
 
                         while (true) {
-                            this.node.id = data.getUint32(off, true);
+                            let n = new Node();
+                            n.id = data.getUint32(off, true);
                             off += 4;
 
-                            if (this.node.id == 0) break;
+                            if (n.id == 0) break;
 
-                            this.node.x = data.getInt32(off, true);
+                            n.x = data.getInt32(off, true);
                             off += 4;
 
-                            this.node.y = data.getInt32(off, true);
+                            n.y = data.getInt32(off, true);
                             off += 4;
 
-                            this.node.size = data.getUint16(off, true);
+                            n.size = data.getUint16(off, true);
                             off += 2;
 
-                            this.node.flags = data.getUint8(off++);
-                            this.node.extendedFlags = 0;
+                            n.flags = data.getUint8(off++);
+                            n.extendedFlags = 0;
 
-                            if (this.node.flags & 128) this.node.extendedFlags = data.getUint8(off++);
-                            if (this.node.flags & 1) this.node.isVirus = true;
-                            if (this.node.flags & 2) off += 3;
-                            if (this.node.flags & 4) while (data.getInt8(off++) !== 0) { }
-                            if (this.node.flags & 8) while (data.getInt8(off++) !== 0) { }
-                            if (this.node.extendedFlags & 1) this.node.isFood = true;
-                            if (this.node.extendedFlags & 4) off += 4;
+                            if (n.flags & 128) n.extendedFlags = data.getUint8(off++);
+                            if (n.flags & 1) n.isVirus = true;
+                            if (n.flags & 2) off += 3;
+                            if (n.flags & 4) while (data.getInt8(off++) !== 0) { }
+                            if (n.flags & 8) while (data.getInt8(off++) !== 0) { }
+                            if (n.extendedFlags & 1) n.isFood = true;
+                            if (n.extendedFlags & 4) off += 4;
 
-                            this.nodes[this.node.id] = this.node;
+                            this.nodes[n.id] = n;
                         }
 
                         let removeQueueLength = data.getUint16(off, true);
@@ -329,12 +343,52 @@ class Bot {
                         if (this.borders.maxX - this.borders.minX > 14E3) this.offsetX = (this.borders.maxX + this.borders.minX) / 2;
                         if (this.borders.maxY - this.borders.minY > 14E3) this.offsetY = (this.borders.maxY + this.borders.minY) / 2;
 
-                        if (this.isAlive && !window.client.collectPellets)
+                        if (this.isAlive && !window.client.collectPellets) {
                             this.moveTo((window.client.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, (window.client.clientY - window.innerHeight / 2) / window.viewScale + window.playerY);
+                        }
+                        if (this.isAlive && window.client.collectPellets) {
+                            let nearestFood = this.getNearestFood();
+                            this.moveTo(nearestFood.x - this.offsetX, nearestFood.y - this.offsetY);
+                        }
                         break;
                 }
                 break;
         }
+    }
+
+    getBotNodePos() {
+        let botNode = {x: 0, y: 0, size: 0};
+
+
+        for (let i = 0; i < this.cellsIDs.length; i++) {
+            let id = this.cellsIDs[i];
+            const cell = this.nodes[id];
+            if (cell) {
+                botNode.x += cell.x / this.cellsIDs.length;
+                botNode.y += cell.y / this.cellsIDs.length;
+                botNode.size += cell.size / this.cellsIDs.length;
+            }
+        };
+
+        return botNode;
+    }
+
+    getNearestFood() {
+        let botNode = this.getBotNodePos();
+        let bestDist = 10000;
+        let nearestFood = new Object();
+
+        Object.keys(this.nodes).forEach(nodeId => {
+            let node = this.nodes[nodeId];
+            let dist = Math.hypot(node.x - botNode.x, node.y - botNode.y)
+            if (dist < bestDist & (node.size < botNode.size * 0.85 || node.isFood)) {
+                console.log(node)
+                bestDist = dist;
+                nearestFood = node;
+            }
+        });
+
+        return nearestFood;
     }
 
     send(buf, runEncryption) {
