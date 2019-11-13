@@ -79,7 +79,6 @@ let observer = new MutationObserver((mutations) => {
 observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
 
 class Node {
-
     constructor() {
         this.x = 0;
         this.y = 0;
@@ -359,7 +358,6 @@ class Bot {
     getBotNodePos() {
         let botNode = {x: 0, y: 0, size: 0};
 
-
         for (let i = 0; i < this.cellsIDs.length; i++) {
             let id = this.cellsIDs[i];
             const cell = this.nodes[id];
@@ -382,7 +380,6 @@ class Bot {
             let node = this.nodes[nodeId];
             let dist = Math.hypot(node.x - botNode.x, node.y - botNode.y)
             if (dist < bestDist & (node.size < botNode.size * 0.85 || node.isFood)) {
-                console.log(node)
                 bestDist = dist;
                 nearestFood = node;
             }
