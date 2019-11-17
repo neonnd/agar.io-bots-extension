@@ -3,8 +3,8 @@
 // @version      3.0.2
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
-// @updateURL    //
-// @downloadURL  //
+// @updateURL    https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
+// @downloadURL  https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
