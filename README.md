@@ -9,7 +9,8 @@
 ### How to use
 * install tampermonkey extension for chrome/firefox
 * install [userscript](https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js)
-* open agar.io start & bots after spawning
+* open agar.io and disable shield (allow unsafe scripts)
+* start the bots after spawning and have fun
 
 ### Bot controls
 * (X) To split
