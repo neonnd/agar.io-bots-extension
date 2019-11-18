@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0.3
+// @version      3.0.4
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
 // @updateURL    https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
@@ -126,7 +126,6 @@ class Client {
         this.clientY = 0;
         this.botID = 1;
         this.loadCSS();
-        this.loadGUI();
     }
 
     connect() {
@@ -282,6 +281,15 @@ class Client {
             this.clientX = event.clientX;
             this.clientY = event.clientY;
         });
+
+        let check = setInterval(() => {
+            if (document.readyState == "complete") {
+                clearInterval(check);
+                setTimeout(() => {
+                    this.loadGUI();
+                }, 1500);
+            }
+        }, 100);
     }
 
     createUUID() {
