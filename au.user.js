@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0.2
+// @version      3.0.3
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
 // @updateURL    https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
