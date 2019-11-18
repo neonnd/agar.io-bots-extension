@@ -9,7 +9,7 @@
 ### How to use
 * install tampermonkey extension for chrome/firefox
 * install [userscript](https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js)
-* open agar.io start bots after spawning
+* open agar.io start & bots after spawning
 
 ### Bot controls
 * (X) To split
