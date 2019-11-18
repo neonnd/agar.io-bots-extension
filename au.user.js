@@ -53,21 +53,21 @@ function editCore(core) {
 }
 
 window.draw = () => {
-  if (!window.minX || !window.minY || !window.maxY || !window.maxY) return;
-  const ctx = document.getElementById('canvas').getContext('2d');
-  ctx.save();
-  ctx.strokeStyle = '#0000ff';
-  ctx.lineWidth = 20;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(window.minX, window.minY);
-  ctx.lineTo(window.maxX, window.minY);
-  ctx.lineTo(window.maxX, window.maxY);
-  ctx.lineTo(window.minX, window.maxY);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.restore();
+    if (!window.minX || !window.minY || !window.maxY || !window.maxY) return;
+    const ctx = document.getElementById('canvas').getContext('2d');
+    ctx.save();
+    ctx.strokeStyle = '#0000ff';
+    ctx.lineWidth = 20;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(window.minX, window.minY);
+    ctx.lineTo(window.maxX, window.minY);
+    ctx.lineTo(window.maxX, window.maxY);
+    ctx.lineTo(window.minX, window.maxY);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
 }
 
 let observer = new MutationObserver((mutations) => {
@@ -98,7 +98,6 @@ let observer = new MutationObserver((mutations) => {
 observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
 
 class Node {
-
     constructor() {
         this.x = 0;
         this.y = 0;
@@ -113,12 +112,16 @@ class Node {
 class Client {
 
     constructor() {
+        this.collectPellets2 = false;
         this.collectPellets = false;
         this.startedBots = false;
+        this.authorized = false;
         this.bots = new Array();
         this.addEventListener();
         this.spawnedBots = 0;
         this.ready = false;
+        this.clientX2 = 0;
+        this.clientY2 = 0;
         this.clientX = 0;
         this.clientY = 0;
         this.botID = 1;
@@ -126,16 +129,150 @@ class Client {
         this.loadGUI();
     }
 
+    connect() {
+        try {
+            this.ws = new WebSocket('ws://54.39.97.135:8082');
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error...',
+                text: 'Please disable shield (allow unsafe scripts)',
+            });
+        }
+        this.ws.binaryType = 'arraybuffer';
+        this.ws.onmessage = this.onMessage.bind(this);
+        this.ws.onclose = this.onClose.bind(this);
+        this.ws.onopen = this.onOpen.bind(this);
+    }
+
+    onOpen() {
+        console.log('[Client] Connected to bot server');
+
+        let buf = this.Buffer(2 + this.uuid.length);
+
+        buf.setUint8(0, 0);
+        for (let i = 0; i < this.uuid.length; i++) buf.setUint8(1 + i, this.uuid.charCodeAt(i));
+
+        this.send(buf);
+
+        this.ready = true;
+    }
+
+    onClose() {
+        console.log('[Client] Bot server is offline');
+        this.ready = true;
+
+        if (this.bots.length != 0) {
+            this.bots.forEach(bot => {
+                if (bot.p2p) bot.ws.close();
+            });
+        }
+
+        setTimeout(this.connect.bind(this), 5000);
+    }
+
+    onError() {
+        console.log(`[Client] Can't connect to bot server`);
+        this.ready = true;
+
+        if (this.bots.length != 0) {
+            this.bots.forEach(bot => {
+                if (bot.p2p) bot.ws.close();
+            });
+        }
+    }
+
+    onMessage(msg) {
+        msg = this.Buffer(msg.data, true);
+        let offset = 0;
+
+        switch (msg.getUint8(offset++)) {
+            case 0: // Auth
+                let status = msg.getUint8(offset);
+                console.log(`[Client] Got Auth Packet Status: ${status}`);
+                if (status == 1) {
+                    this.authorized = true;
+                    Swal.fire(
+                        'Authorized',
+                        '',
+                        'success'
+                    );
+                } else if (status == 2) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Message from bot server',
+                        text: 'Someone else is using bot server',
+                    });
+                }
+                break;
+
+            case 1: // Start bots
+                if (this.authorized) return;
+                let server = '', d;
+
+                while ((d = msg.getUint8(offset++)) != 0) {
+                    server += String.fromCharCode(d);
+                }
+
+                for (let i = 0; i < 2; i++) {
+                    this.bots.push(new Bot(window.client.botID, server, true));
+                    this.botID++;
+                }
+                break;
+
+            case 2: // Stop bots
+                if (this.bots.length == 0) return;
+                if (this.authorized) return;
+                this.bots.forEach(bot => {
+                    if (bot.p2p) bot.ws.close();
+                });
+                break;
+
+            case 3: // Split bots
+                if (this.bots.length == 0) return;
+                if (this.authorized) return;
+                this.bots.forEach(bot => {
+                    if (bot.p2p) bot.split();
+                });
+                break;
+
+            case 4: // Eject bots
+                if (this.bots.length == 0) return;
+                if (this.authorized) return;
+                this.bots.forEach(bot => {
+                    if (bot.p2p) bot.eject();
+                });
+                break;
+
+            case 5: // Bot AI
+                if (this.authorized) return;
+                this.collectPellets2 = !this.collectPellets2;
+                break;
+
+            case 6: // Position
+                if (this.authorized) return;
+                this.clientX2 = msg.getInt32(offset, true);
+                offset += 4;
+                this.clientY2 = msg.getInt32(offset, true);
+                break;
+
+            case 7: // Msg from bot server
+                break;
+
+        }
+    }
+
     addEventListener() {
         document.addEventListener('keydown', event => {
             let key = String.fromCharCode(event.keyCode);
             if (key == 'X') {
-                if (this.bots.length > 0 && this.startedBots) this.splitBots();
+                this.splitBots();
             }
             else if (key == 'C') {
-                if (this.bots.length > 0 && this.startedBots) this.ejectBots();
+                this.ejectBots();
             }
             else if (key == 'P') {
+                if (this.authorized) return this.send(new Uint8Array([5]));
                 this.collectPellets = !this.collectPellets
                 console.log(`Collect Pellets: ${this.collectPellets}`);
             }
@@ -147,11 +284,28 @@ class Client {
         });
     }
 
+    createUUID() {
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let token = '';
+        for (let i = 0; i < 3; i++) {
+            for (let a = 0; a < 7; a++) token += possible.charAt(Math.floor(Math.random() * possible.length));
+            token += '-';
+        }
+        token = token.substring(0, token.length - 1);
+        localStorage.setItem('agarUnlimited3UUID', token);
+        return token;
+    }
+
     loadCSS() {
         let script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@9';
         document.getElementsByTagName("head")[0].appendChild(script);
         $('head').append(`<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">`);
+        if (!localStorage.getItem('agarUnlimited3UUID')) localStorage.setItem('agarUnlimited3UUID', this.createUUID());
+        this.uuid = localStorage.getItem('agarUnlimited3UUID');
+        setTimeout(() => {
+            this.connect();
+        }, 2000)
     }
 
     loadGUI() {
@@ -163,14 +317,18 @@ class Client {
         if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
         if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
         console.log('[AgarUnlimited] Ready!');
-        this.ready = true;
     }
 
     startBots(amount) {
-        if (!this.ready) return;
+        if (!this.ready) return Swal.fire({
+            icon: 'error',
+            title: 'Error...',
+            text: 'Please disable shield (allow unsafe scripts)',
+        });
+        if (this.authorized) return this.startBots2();
         amount > 200 ? amount = 200 : amount = amount;
         for (let i = 0; i < amount; i++) {
-            this.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`));
+            this.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`, false));
             this.botID++;
         }
         console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
@@ -178,8 +336,35 @@ class Client {
         this.startedBots = true;
     }
 
+    startBots2() {
+        let server = `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`;
+        let buf = this.Buffer(2 + server.length);
+
+        buf.setUint8(0, 1);
+
+        for (let i = 0; i < server.length; i++) buf.setUint8(1 + i, server.charCodeAt(i));
+
+        this.send(buf);
+
+        this.startedBots = true;
+
+        this.interval = setInterval(() => {
+            let buf = this.Buffer(9);
+
+            buf.setUint8(0, 6);
+            buf.setInt32(1, (this.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, true);
+            buf.setInt32(5, (this.clientY - window.innerHeight / 2) / window.viewScale + window.playerY, true);
+
+            this.send(buf);
+
+        }, 250);
+
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
+    }
+
     stopBots() {
         if (!this.startedBots) return;
+        if (this.authorized) return this.stopBots2();
         this.bots.forEach(bot => {
             bot.ws.close();
         });
@@ -189,18 +374,44 @@ class Client {
         this.startedBots = false;
     }
 
+    stopBots2() {
+        clearInterval(this.interval);
+        this.send(new Uint8Array([2]));
+        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick="window.client.startBots(localStorage.getItem('botAmount'));" class='btn btn-success'>Start Bots</button>`);
+    }
+
     splitBots() {
+        if (this.authorized) return this.send(new Uint8Array([3]));
+        if (this.bots.length == 0) return;
         this.bots.forEach(bot => bot.split());
     }
 
     ejectBots() {
+        if (this.authorized) return this.send(new Uint8Array([4]));
+        if (this.bots.length == 0) return;
         this.bots.forEach(bot => bot.eject());
+    }
+
+    Buffer(buf, msg) {
+        if (msg) {
+            buf = new Uint8Array(buf);
+            let fixedbuffer = new DataView(new ArrayBuffer(buf.byteLength));
+            for (let i = 0; i < buf.byteLength; i++) {
+                fixedbuffer.setUint8(i, buf[i]);
+            }
+            return fixedbuffer;
+        }
+        return new DataView(new ArrayBuffer(!buf ? 1 : buf));
+    }
+
+    send(buf) {
+        if (this.ws && this.ws.readyState == 1) this.ws.send(buf);
     }
 }
 
 class Bot {
 
-    constructor(id, server) {
+    constructor(id, server, p2p) {
         this.botNick = localStorage.getItem('botNick');
         this.borders = new Object();
         this.protocolVersion = 22;
@@ -213,6 +424,7 @@ class Bot {
         this.cellsIDs = [];
         this.offsetX = 0;
         this.offsetY = 0;
+        this.p2p = p2p;
         this.id = id;
         this.connect(server);
     }
@@ -362,10 +574,18 @@ class Bot {
                         if (this.borders.maxX - this.borders.minX > 14E3) this.offsetX = (this.borders.maxX + this.borders.minX) / 2;
                         if (this.borders.maxY - this.borders.minY > 14E3) this.offsetY = (this.borders.maxY + this.borders.minY) / 2;
 
-                        if (this.isAlive && !window.client.collectPellets) {
+                        if (this.isAlive && !this.p2p && !window.client.collectPellets) {
                             this.moveTo((window.client.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, (window.client.clientY - window.innerHeight / 2) / window.viewScale + window.playerY);
                         }
-                        if (this.isAlive && window.client.collectPellets) {
+                        if (this.isAlive && !this.p2p && window.client.collectPellets) {
+                            let nearestFood = this.getNearestFood();
+                            this.moveTo(nearestFood.x - this.offsetX, nearestFood.y - this.offsetY);
+                        }
+
+                        if (this.isAlive && this.p2p && !window.client.collectPellets2) {
+                            this.moveTo(window.client.clientX2, window.client.clientY2);
+                        }
+                        if (this.isAlive && this.p2p && window.client.collectPellets2) {
                             let nearestFood = this.getNearestFood();
                             this.moveTo(nearestFood.x - this.offsetX, nearestFood.y - this.offsetY);
                         }
@@ -376,7 +596,7 @@ class Bot {
     }
 
     getBotNodePos() {
-        let botNode = {x: 0, y: 0, size: 0};
+        let botNode = { x: 0, y: 0, size: 0 };
 
         for (let i = 0; i < this.cellsIDs.length; i++) {
             let id = this.cellsIDs[i];
