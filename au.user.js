@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0.5
+// @version      3.0.6
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
 // @updateURL    https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
@@ -119,146 +119,12 @@ class Client {
         this.bots = new Array();
         this.addEventListener();
         this.spawnedBots = 0;
-        this.ready = false;
         this.clientX2 = 0;
         this.clientY2 = 0;
         this.clientX = 0;
         this.clientY = 0;
         this.botID = 1;
         this.loadCSS();
-    }
-
-    connect() {
-        try {
-            this.ws = new WebSocket('ws://54.39.97.135:8082');
-        } catch (e) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error...',
-                text: 'Please disable shield (allow unsafe scripts)',
-            });
-        }
-        this.ws.binaryType = 'arraybuffer';
-        this.ws.onmessage = this.onMessage.bind(this);
-        this.ws.onclose = this.onClose.bind(this);
-        this.ws.onopen = this.onOpen.bind(this);
-    }
-
-    onOpen() {
-        console.log('[Client] Connected to bot server');
-
-        let buf = this.Buffer(2 + this.uuid.length);
-
-        buf.setUint8(0, 0);
-        for (let i = 0; i < this.uuid.length; i++) buf.setUint8(1 + i, this.uuid.charCodeAt(i));
-
-        this.send(buf);
-
-        this.ready = true;
-    }
-
-    onClose() {
-        console.log('[Client] Bot server is offline');
-        this.ready = true;
-
-        if (this.bots.length != 0) {
-            this.bots.forEach(bot => {
-                if (bot.p2p) bot.ws.close();
-            });
-        }
-
-        setTimeout(this.connect.bind(this), 5000);
-    }
-
-    onError() {
-        console.log(`[Client] Can't connect to bot server`);
-        this.ready = true;
-
-        if (this.bots.length != 0) {
-            this.bots.forEach(bot => {
-                if (bot.p2p) bot.ws.close();
-            });
-        }
-    }
-
-    onMessage(msg) {
-        msg = this.Buffer(msg.data, true);
-        let offset = 0;
-
-        switch (msg.getUint8(offset++)) {
-            case 0: // Auth
-                let status = msg.getUint8(offset);
-                console.log(`[Client] Got Auth Packet Status: ${status}`);
-                if (status == 1) {
-                    this.authorized = true;
-                    Swal.fire(
-                        'Authorized',
-                        '',
-                        'success'
-                    );
-                } else if (status == 2) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Message from bot server',
-                        text: 'Someone else is using bot server',
-                    });
-                }
-                break;
-
-            case 1: // Start bots
-                if (this.authorized) return;
-                let server = '', d;
-
-                while ((d = msg.getUint8(offset++)) != 0) {
-                    server += String.fromCharCode(d);
-                }
-
-                for (let i = 0; i < 2; i++) {
-                    this.bots.push(new Bot(window.client.botID, server, true));
-                    this.botID++;
-                }
-                break;
-
-            case 2: // Stop bots
-                if (this.bots.length == 0) return;
-                if (this.authorized) return;
-                this.bots.forEach(bot => {
-                    if (bot.p2p) bot.ws.close();
-                });
-                break;
-
-            case 3: // Split bots
-                if (this.bots.length == 0) return;
-                if (this.authorized) return;
-                this.bots.forEach(bot => {
-                    if (bot.p2p) bot.split();
-                });
-                break;
-
-            case 4: // Eject bots
-                if (this.bots.length == 0) return;
-                if (this.authorized) return;
-                this.bots.forEach(bot => {
-                    if (bot.p2p) bot.eject();
-                });
-                break;
-
-            case 5: // Bot AI
-                if (this.authorized) return;
-                this.collectPellets2 = !this.collectPellets2;
-                break;
-
-            case 6: // Position
-                if (this.authorized) return;
-                this.clientX2 = msg.getInt32(offset, true);
-                offset += 4;
-                this.clientY2 = msg.getInt32(offset, true);
-                break;
-
-            case 7: // Msg from bot server
-                break;
-
-        }
     }
 
     addEventListener() {
@@ -311,9 +177,6 @@ class Client {
         $('head').append(`<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">`);
         if (!localStorage.getItem('agarUnlimited3UUID')) localStorage.setItem('agarUnlimited3UUID', this.createUUID());
         this.uuid = localStorage.getItem('agarUnlimited3UUID');
-        setTimeout(() => {
-            this.connect();
-        }, 2000)
     }
 
     loadGUI() {
@@ -328,11 +191,6 @@ class Client {
     }
 
     startBots(amount) {
-        if (!this.ready) return Swal.fire({
-            icon: 'error',
-            title: 'Error...',
-            text: 'Please disable shield (allow unsafe scripts)',
-        });
         if (this.authorized) return this.startBots2();
         amount > 200 ? amount = 200 : amount = amount;
         for (let i = 0; i < amount; i++) {
