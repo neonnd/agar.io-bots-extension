@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         AgarUnlimited
-// @version      3.0.6
+// @version      3.0.7
 // @description  AgarUnlimited Revive by Neon
 // @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
 // @updateURL    https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js
@@ -283,7 +283,7 @@ class Bot {
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = 31004;
+        this.protocolKey = 31005;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
