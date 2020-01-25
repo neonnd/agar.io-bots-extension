@@ -163,32 +163,6 @@ class Client {
         this.startedBots = true;
     }
 
-    startBots2() {
-        let server = `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`;
-        let buf = this.Buffer(2 + server.length);
-
-        buf.setUint8(0, 1);
-
-        for (let i = 0; i < server.length; i++) buf.setUint8(1 + i, server.charCodeAt(i));
-
-        this.send(buf);
-
-        this.startedBots = true;
-
-        this.interval = setInterval(() => {
-            let buf = this.Buffer(9);
-
-            buf.setUint8(0, 6);
-            buf.setInt32(1, (this.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, true);
-            buf.setInt32(5, (this.clientY - window.innerHeight / 2) / window.viewScale + window.playerY, true);
-
-            this.send(buf);
-
-        }, 250);
-
-        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick='window.client.stopBots();' class='btn btn-danger'>Stop Bots</button>`);
-    }
-
     stopBots() {
         if (!this.startedBots) return;
         if (this.authorized) return this.stopBots2();
@@ -199,12 +173,6 @@ class Client {
         console.log('[AgarUnlimited] Stopped bots!');
         $('#toggleButton').replaceWith(`<button id='toggleButton' onclick="window.client.startBots(localStorage.getItem('botAmount'));" class='btn btn-success'>Start Bots</button>`);
         this.startedBots = false;
-    }
-
-    stopBots2() {
-        clearInterval(this.interval);
-        this.send(new Uint8Array([2]));
-        $('#toggleButton').replaceWith(`<button id='toggleButton' onclick="window.client.startBots(localStorage.getItem('botAmount'));" class='btn btn-success'>Start Bots</button>`);
     }
 
     splitBots() {
@@ -244,7 +212,7 @@ class Bot {
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = 31005;
+        this.protocolKey = 31006;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
