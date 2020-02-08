@@ -6,10 +6,13 @@
 
 ##
 
+### README
+
+* this project is dead i don't care about agar anymore and i stopped updating it feel free to open pull requests
+
 ### How to use
 * install tampermonkey extension for chrome/firefox
 * install [userscript](https://github.com/Neonx99/agar.io-bots-extension/raw/master/au.user.js)
-* open agar.io and disable shield (allow unsafe scripts)
 * start the bots after spawning and have fun
 
 ### Bot controls
