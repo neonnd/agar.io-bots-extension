@@ -212,7 +212,7 @@ class Bot {
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = 31007;
+        this.protocolKey = 31008;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
