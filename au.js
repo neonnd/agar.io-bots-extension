@@ -78,6 +78,7 @@ class Node {
 class Client {
 
     constructor() {
+        this.fetchLatest();
         this.collectPellets2 = false;
         this.collectPellets = false;
         this.startedBots = false;
@@ -91,6 +92,14 @@ class Client {
         this.clientY = 0;
         this.botID = 1;
         this.loadCSS();
+    }
+
+    async fetchLatest() {
+        const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
+        const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
+        this.protocolKey = 10000 *
+            parseInt(clientVersionString.split(".")[0]) + 100 *
+            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
     }
 
     addEventListener() {
@@ -158,7 +167,7 @@ class Client {
         if (this.authorized) return this.startBots2();
         amount > 200 ? amount = 200 : amount = amount;
         for (let i = 0; i < amount; i++) {
-            this.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`, false));
+            this.bots.push(new Bot(this.protocolKey, window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`, false));
             this.botID++;
         }
         console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
@@ -209,8 +218,8 @@ class Client {
 
 class Bot {
 
-    constructor(id, server, p2p) {
-        this.fetchLatest();
+    constructor(protocolKey, id, server, p2p) {
+        this.protocolKey = protocolKey;
         this.botNick = localStorage.getItem('botNick');
         this.borders = new Object();
         this.protocolVersion = 22;
@@ -225,14 +234,6 @@ class Bot {
         this.p2p = p2p;
         this.id = id;
         this.connect(server);
-    }
-
-    async fetchLatest() {
-        const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
-        const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
-        this.protocolKey = 10000 *
-            parseInt(clientVersionString.split(".")[0]) + 100 *
-            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
     }
 
     connect(server) {
