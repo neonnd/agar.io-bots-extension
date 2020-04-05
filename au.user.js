@@ -2,7 +2,7 @@
 // @name         AgarUnlimited
 // @version      3.0.0
 // @description  AgarUnlimited Revive by Neon
-// @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS
+// @author       Neon - Sizrex - MrSonicMaster - NuclearC - StrikerJS - Nebula
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
