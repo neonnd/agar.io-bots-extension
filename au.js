@@ -1,3 +1,13 @@
+async function fetchLatest() {
+	const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
+	const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
+	return 10000 *
+		parseInt(clientVersionString.split(".")[0]) + 100 *
+		parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
+}
+
+const clientVersion = await fetchLatest();
+
 function editCore(core) {
     core = core.replace(/;if\((\w)<1\.0\){/i, ';if($1<0){');
     core = core.replace(/([\w]+\s*=\s*[\w]+\s*\+\s*16\s*\|\s*0;\s*([\w=]+)\s*=\s*\+[\w\[\s*><\]]+;)/, '$1 $2*=0.75;');
@@ -212,7 +222,7 @@ class Bot {
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = 31008;
+        this.protocolKey = clientVersion;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
