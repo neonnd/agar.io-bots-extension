@@ -1,13 +1,3 @@
-async function fetchLatest() {
-	const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
-	const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
-	return 10000 *
-		parseInt(clientVersionString.split(".")[0]) + 100 *
-		parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
-}
-
-const clientVersion = await fetchLatest();
-
 function editCore(core) {
     core = core.replace(/;if\((\w)<1\.0\){/i, ';if($1<0){');
     core = core.replace(/([\w]+\s*=\s*[\w]+\s*\+\s*16\s*\|\s*0;\s*([\w=]+)\s*=\s*\+[\w\[\s*><\]]+;)/, '$1 $2*=0.75;');
@@ -50,7 +40,7 @@ let observer = new MutationObserver((mutations) => {
                 let request = new XMLHttpRequest();
                 request.open('get', node.src, true);
                 request.send();
-                request.onload = function () {
+                request.onload = function() {
                     let coretext = this.responseText;
                     let newscript = document.createElement('script');
                     newscript.type = 'text/javascript';
@@ -66,7 +56,12 @@ let observer = new MutationObserver((mutations) => {
     });
 });
 
-observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
+observer.observe(document, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true
+});
 
 class Node {
     constructor() {
@@ -103,11 +98,9 @@ class Client {
             let key = String.fromCharCode(event.keyCode);
             if (key == 'X') {
                 this.splitBots();
-            }
-            else if (key == 'C') {
+            } else if (key == 'C') {
                 this.ejectBots();
-            }
-            else if (key == 'P') {
+            } else if (key == 'P') {
                 if (this.authorized) return this.send(new Uint8Array([5]));
                 this.collectPellets = !this.collectPellets
                 console.log(`Collect Pellets: ${this.collectPellets}`);
@@ -217,12 +210,12 @@ class Client {
 class Bot {
 
     constructor(id, server, p2p) {
+        this.fetchLatest();
         this.botNick = localStorage.getItem('botNick');
         this.borders = new Object();
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = clientVersion;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
@@ -232,6 +225,14 @@ class Bot {
         this.p2p = p2p;
         this.id = id;
         this.connect(server);
+    }
+
+    async fetchLatest() {
+        const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
+        const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
+        this.protocolKey = 10000 *
+            parseInt(clientVersionString.split(".")[0]) + 100 *
+            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
     }
 
     connect(server) {
@@ -340,8 +341,10 @@ class Bot {
                             if (n.flags & 128) n.extendedFlags = data.getUint8(off++);
                             if (n.flags & 1) n.isVirus = true;
                             if (n.flags & 2) off += 3;
-                            if (n.flags & 4) while (data.getInt8(off++) !== 0) { }
-                            if (n.flags & 8) while (data.getInt8(off++) !== 0) { }
+                            if (n.flags & 4)
+                                while (data.getInt8(off++) !== 0) {}
+                            if (n.flags & 8)
+                                while (data.getInt8(off++) !== 0) {}
                             if (n.extendedFlags & 1) n.isFood = true;
                             if (n.extendedFlags & 4) off += 4;
 
@@ -401,7 +404,11 @@ class Bot {
     }
 
     getBotNodePos() {
-        let botNode = { x: 0, y: 0, size: 0 };
+        let botNode = {
+            x: 0,
+            y: 0,
+            size: 0
+        };
 
         for (let i = 0; i < this.cellsIDs.length; i++) {
             let id = this.cellsIDs[i];
