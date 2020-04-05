@@ -40,7 +40,7 @@ let observer = new MutationObserver((mutations) => {
                 let request = new XMLHttpRequest();
                 request.open('get', node.src, true);
                 request.send();
-                request.onload = function () {
+                request.onload = function() {
                     let coretext = this.responseText;
                     let newscript = document.createElement('script');
                     newscript.type = 'text/javascript';
@@ -56,7 +56,12 @@ let observer = new MutationObserver((mutations) => {
     });
 });
 
-observer.observe(document, { attributes: true, characterData: true, childList: true, subtree: true });
+observer.observe(document, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true
+});
 
 class Node {
     constructor() {
@@ -73,6 +78,7 @@ class Node {
 class Client {
 
     constructor() {
+        this.fetchLatest();
         this.collectPellets2 = false;
         this.collectPellets = false;
         this.startedBots = false;
@@ -88,16 +94,22 @@ class Client {
         this.loadCSS();
     }
 
+    async fetchLatest() {
+        const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
+        const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
+        this.protocolKey = 10000 *
+            parseInt(clientVersionString.split(".")[0]) + 100 *
+            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
+    }
+
     addEventListener() {
         document.addEventListener('keydown', event => {
             let key = String.fromCharCode(event.keyCode);
             if (key == 'X') {
                 this.splitBots();
-            }
-            else if (key == 'C') {
+            } else if (key == 'C') {
                 this.ejectBots();
-            }
-            else if (key == 'P') {
+            } else if (key == 'P') {
                 if (this.authorized) return this.send(new Uint8Array([5]));
                 this.collectPellets = !this.collectPellets
                 console.log(`Collect Pellets: ${this.collectPellets}`);
@@ -155,7 +167,7 @@ class Client {
         if (this.authorized) return this.startBots2();
         amount > 200 ? amount = 200 : amount = amount;
         for (let i = 0; i < amount; i++) {
-            this.bots.push(new Bot(window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`, false));
+            this.bots.push(new Bot(this.protocolKey, window.client.botID, `wss://${window.MC.getHost()}:443?party_id=${window.MC.getPartyToken()}`, false));
             this.botID++;
         }
         console.log(`[AgarUnlimited] Starting ${localStorage.getItem('botAmount')} bots!`);
@@ -206,13 +218,13 @@ class Client {
 
 class Bot {
 
-    constructor(id, server, p2p) {
+    constructor(protocolKey, id, server, p2p) {
+        this.protocolKey = protocolKey;
         this.botNick = localStorage.getItem('botNick');
         this.borders = new Object();
         this.protocolVersion = 22;
         this.nodes = new Array();
         this.node = new Object();
-        this.protocolKey = 31008;
         this.encryptionKey = 0;
         this.decryptionKey = 0;
         this.serverIP = server;
@@ -330,8 +342,10 @@ class Bot {
                             if (n.flags & 128) n.extendedFlags = data.getUint8(off++);
                             if (n.flags & 1) n.isVirus = true;
                             if (n.flags & 2) off += 3;
-                            if (n.flags & 4) while (data.getInt8(off++) !== 0) { }
-                            if (n.flags & 8) while (data.getInt8(off++) !== 0) { }
+                            if (n.flags & 4)
+                                while (data.getInt8(off++) !== 0) {}
+                            if (n.flags & 8)
+                                while (data.getInt8(off++) !== 0) {}
                             if (n.extendedFlags & 1) n.isFood = true;
                             if (n.extendedFlags & 4) off += 4;
 
@@ -391,7 +405,11 @@ class Bot {
     }
 
     getBotNodePos() {
-        let botNode = { x: 0, y: 0, size: 0 };
+        let botNode = {
+            x: 0,
+            y: 0,
+            size: 0
+        };
 
         for (let i = 0; i < this.cellsIDs.length; i++) {
             let id = this.cellsIDs[i];
