@@ -159,7 +159,7 @@ class Client {
         <center><button id="toggleButton" onclick="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
         `);
         if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
-        if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
+        if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'SETAN');
         console.log('[AgarUnlimited] Ready!');
     }
 
