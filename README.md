@@ -6,9 +6,9 @@
 
 ##
 
-### README
+###  !!! OUTDATED !!!
 
-* this project is dead i don't care about agar anymore and i stopped updating it feel free to open pull requests
+* Buy premium agar.io bots here [OP-Bots.com](http://op-bots.com/)
 
 ### How to use
 * install tampermonkey extension for chrome/firefox
