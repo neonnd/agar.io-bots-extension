@@ -155,10 +155,10 @@ class Client {
     loadGUI() {
         $('.agario-promo-container').replaceWith(`
         <input onchange="localStorage.setItem('botNick', this.value);" id="botNick" maxlength="15" class="form-control" placeholder="Bot Name" value="Bot"></input>
-        <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="3" class="form-control" placeholder="Bot Amount" value="10"></input>
+        <input onchange="localStorage.setItem('botAmount', this.value);" id="BotAmount" maxlength="3" class="form-control" placeholder="Bot Amount" value="100"></input>
         <center><button id="toggleButton" onclick="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
         `);
-        if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
+        if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 100);
         if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
         console.log('[AgarUnlimited] Ready!');
     }
