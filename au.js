@@ -97,9 +97,9 @@ class Client {
     async fetchLatest() {
         const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
         const clientVersionString = file.match(/(?<=versionString = ")[^"]+/)[0];
-        this.protocolKey = 10000 *
-            parseInt(clientVersionString.split(".")[0]) + 100 *
-            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
+        //var versionInt = Std.parseInt(versionString.split(".")[0]) * 10000 + Std.parseInt(versionString.split(".")[1]) * 100 + Std.parseInt(versionString.split(".")[2]);
+        
+        this.protocolKey = parseInt(clientVersionString.split(".")[0]) * 10000 + parseInt(clientVersionString.split(".")[1]) * 100 + parseInt(clientVersionString.split(".")[2]);
     }
 
     addEventListener() {
