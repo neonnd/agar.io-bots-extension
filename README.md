@@ -1,3 +1,4 @@
+[OUTDATED]
 <img width="150" height="150" align="left" style="float: left; margin: 0 10px 0 0;" alt="Agar.io discord bot" src="https://cdn.discordapp.com/icons/503976725621768223/609175e0d6764037c548b09d17712788.png?size=512">  
 
 # Agar Unlimited

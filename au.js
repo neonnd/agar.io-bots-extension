@@ -96,10 +96,10 @@ class Client {
 
     async fetchLatest() {
         const file = await fetch("https://agar.io/mc/agario.js").then((response) => response.text());
-        const clientVersionString = file.match(/(?<=versionString=")[^"]+/)[0];
-        this.protocolKey = 10000 *
-            parseInt(clientVersionString.split(".")[0]) + 100 *
-            parseInt(clientVersionString.split(".")[1]) + parseInt(clientVersionString.split(".")[2]);
+        const clientVersionString = file.match(/(?<=versionString = ")[^"]+/)[0];
+        //var versionInt = Std.parseInt(versionString.split(".")[0]) * 10000 + Std.parseInt(versionString.split(".")[1]) * 100 + Std.parseInt(versionString.split(".")[2]);
+        
+        this.protocolKey = parseInt(clientVersionString.split(".")[0]) * 10000 + parseInt(clientVersionString.split(".")[1]) * 100 + parseInt(clientVersionString.split(".")[2]);
     }
 
     addEventListener() {
@@ -159,7 +159,7 @@ class Client {
         <center><button id="toggleButton" onclick="window.client.startBots(localStorage.getItem('botAmount'));" class="btn btn-success">Start Bots</button></center>
         `);
         if (!localStorage.getItem('botAmount')) localStorage.setItem('botAmount', 10);
-        if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Sanik');
+        if (!localStorage.getItem('botNick')) localStorage.setItem('botNick', 'Bot');
         console.log('[AgarUnlimited] Ready!');
     }
 
@@ -280,31 +280,34 @@ class Bot {
 
         switch (msg.getUint8(offset++)) {
 
-            case 241:
+            case 241: //Decode "secret"
                 this.decryptionKey = msg.getUint32(offset, true);
                 oldMsg = Array.from(new Uint8Array(oldMsg)).splice(5, 11);
                 this.encryptionKey = this.clientKey(this.serverIP, new Uint8Array(oldMsg));
                 break;
 
-            case 242:
-                console.log(`Bot_${this.id}: Spawning`);
-                window.agarApp.recaptcha.requestCaptchaV3('play', token => this.spawn(this.botNick + 'x', token));
+            case 242: //Spawn on connect
+                setTimeout(() => {
+                    console.log(`Bot_${this.id}: Spawning`);
+                    window.agarApp.recaptcha.requestCaptchaV3('play', token => this.spawn(this.botNick + 'x', token));
+                }, 200 + Math.random() * 100);
+              //  window.agarApp.recaptcha.requestCaptchaV3('play', token => this.spawn(this.botNick + 'x', token));
                 break;
 
-            case 85:
+            case 85: //requested captcha
                 console.log(`Bot_${this.id}: Captcha failed Disconnecting...`);
                 window.client.spawnedBots--;
                 this.ws.close();
                 break;
 
-            case 32:
+            case 32: //spawned
                 this.cellsIDs.push(msg.getUint32(offset, true));
                 console.log(`Bot_${this.id}: Spawned`);
                 window.client.spawnedBots++;
                 this.isAlive = true;
                 break;
 
-            case 255:
+            case 255://onDeath / other shit
                 let buf = msg.getUint32(1, true);
                 let out = new Uint8Array(buf)
                 out = this.decompressBuffer(new Uint8Array(msg.buffer.slice(5)), out);
@@ -367,11 +370,13 @@ class Bot {
                         if (this.isAlive && this.cellsIDs.length == 0) {
                             window.client.spawnedBots--;
                             this.isAlive = false;
+                            setTimeout(() => { //fix triggering some "checks" - fix captcha timeout's
                             window.agarApp.recaptcha.requestCaptchaV3('play', token => this.spawn(this.botNick + 'x', token));
+                          }, 20 + Math.random() * 100);
                         }
                         break;
 
-                    case 64:
+                    case 64: //movement scramble fix
                         off = 1;
                         this.borders.minX = data.getFloat64(off, true);
                         off += 8;
@@ -384,7 +389,8 @@ class Bot {
                         if (this.borders.maxY - this.borders.minY > 14E3) this.offsetY = (this.borders.maxY + this.borders.minY) / 2;
 
                         if (this.isAlive && !this.p2p && !window.client.collectPellets) {
-                            this.moveTo((window.client.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, (window.client.clientY - window.innerHeight / 2) / window.viewScale + window.playerY);
+                       //     this.moveTo((window.client.clientX - window.innerWidth / 2) / window.viewScale + window.playerX, (window.client.clientY - window.innerHeight / 2) / window.viewScale + window.playerY);
+                            this.moveTo((window.client.clientX - window.innerWidth / 2) / (window.viewScale / 2.5) + window.playerX, (window.client.clientY - window.innerHeight / 2) / (window.viewScale / 2.5) + window.playerY);
                         }
                         if (this.isAlive && !this.p2p && window.client.collectPellets) {
                             let nearestFood = this.getNearestFood();
